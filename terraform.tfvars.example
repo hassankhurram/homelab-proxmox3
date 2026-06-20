@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+pve_endpoint        = "https://192.168.1.101:8006/"
+pve_node            = "pve"                       # <-- the node's hostname
+pve_api_token       = "terraform@pve!tf=00000000-0000-0000-0000-000000000000"
+pve_ssh_private_key = "~/.ssh/proxmox_homelab"
+
+# Storage — confirm these match your node (`pvesm status`)
+storage_pool    = "local-lvm"
+snippet_storage = "local"
+image_storage   = "local"
+
+ssh_public_keys = [
+  "ssh-rsa AAAA... claude-proxmox-homelab-openclaw",
+  # add your personal pubkey too
+]
+
+tailscale_authkey = "tskey-auth-xxxxxxxxxxxx"
+
+# Override the default VM sizing here if needed (see variables.tf for the schema).

@@ -1,0 +1,38 @@
+#cloud-config
+hostname: ${hostname}
+manage_etc_hosts: true
+
+users:
+  - name: admin
+    groups: [sudo, docker]
+    shell: /usr/bin/zsh
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+%{ for key in ssh_keys ~}
+      - ${key}
+%{ endfor ~}
+
+package_update: true
+package_upgrade: true
+packages:
+  - zsh
+  - git
+  - curl
+  - ca-certificates
+  - qemu-guest-agent
+  - gnupg
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  # Docker (official convenience script)
+  - curl -fsSL https://get.docker.com | sh
+  - systemctl enable --now docker
+  # oh-my-zsh for the admin user (non-interactive)
+  - su - admin -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' || true
+%{ if install_coolify ~}
+  # Coolify (PaaS control plane) — prod only
+  - curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
+%{ endif ~}
+
+final_message: "cloud-init done for ${hostname} after $UPTIME s"
