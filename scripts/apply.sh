@@ -35,6 +35,16 @@ bootstrap_netservices() {
   say "Bootstrapping netservices LXC ($NETSERVICES_VMID): NAT + dnsmasq + tailscale"
   local key; key="$(ts_authkey)"
   [ -n "$key" ] || die "tailscale_authkey not found in terraform.tfvars"
+
+  # Tailscale needs /dev/net/tun. Add device passthrough to the (unprivileged) CT
+  # config if missing, then reboot so it takes effect. Idempotent.
+  say "Ensuring /dev/net/tun passthrough on the container config"
+  pve_ssh "f=/etc/pve/lxc/$NETSERVICES_VMID.conf; \
+    grep -q 'dev/net/tun' \$f || { \
+      printf 'lxc.cgroup2.devices.allow: c 10:200 rwm\nlxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file\n' >> \$f; \
+      pct reboot $NETSERVICES_VMID; }; \
+    for i in \$(seq 1 20); do pct status $NETSERVICES_VMID | grep -q running && pct exec $NETSERVICES_VMID -- test -e /dev/net/tun && break; sleep 2; done"
+
   pve_scp "$REPO_DIR/scripts/netservices-bootstrap.sh" /tmp/ns-bootstrap.sh
   pve_ssh "pct push $NETSERVICES_VMID /tmp/ns-bootstrap.sh /root/bootstrap.sh && pct exec $NETSERVICES_VMID -- bash /root/bootstrap.sh '$key'"
   ok "netservices bootstrapped — approve the 10.10.10.0/24 route in the Tailscale admin console"

@@ -3,7 +3,7 @@ resource "proxmox_download_file" "debian_lxc" {
   content_type = "vztmpl"
   datastore_id = var.image_storage
   node_name    = var.pve_node
-  url          = "http://download.proxmox.com/images/system/debian-12-standard_12.7-1_amd64.tar.zst"
+  url          = "http://download.proxmox.com/images/system/debian-12-standard_12.12-1_amd64.tar.zst"
 }
 
 # netservices: router + NAT + DNS/DHCP + Tailscale subnet router.
@@ -23,8 +23,9 @@ resource "proxmox_virtual_environment_container" "netservices" {
     up_delay = 5
   }
 
-  # Needed for Tailscale (TUN) and nft/NAT inside the container.
-  unprivileged = false
+  # Unprivileged (token users can't set feature flags on privileged CTs, and it's
+  # safer). Tailscale needs /dev/net/tun, added to the CT config during bootstrap.
+  unprivileged = true
   features {
     nesting = true
   }
