@@ -54,7 +54,7 @@ resource "proxmox_virtual_environment_container" "netservices" {
   # LAN side — the internal gateway.
   network_interface {
     name   = "eth1"
-    bridge = var.internal_bridge
+    bridge = proxmox_network_linux_bridge.internal.name
   }
 
   initialization {

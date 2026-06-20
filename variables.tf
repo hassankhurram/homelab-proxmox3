@@ -106,8 +106,9 @@ variable "vms" {
     install_coolify = optional(bool, false)
   }))
   default = {
-    staging = { vmid = 9010, ip = "10.10.10.10", cores = 4, memory = 8192, disk_gb = 60 }
-    prod    = { vmid = 9020, ip = "10.10.10.20", cores = 6, memory = 24576, disk_gb = 120, install_coolify = true }
-    backup  = { vmid = 9030, ip = "10.10.10.30", cores = 2, memory = 8192, disk_gb = 400 }
+    staging   = { vmid = 9010, ip = "10.10.10.10", cores = 4, memory = 8192, disk_gb = 120 }
+    prod      = { vmid = 9020, ip = "10.10.10.20", cores = 6, memory = 16384, disk_gb = 120, install_coolify = true }
+    backup    = { vmid = 9030, ip = "10.10.10.30", cores = 2, memory = 8192, disk_gb = 120 }
+    workplace = { vmid = 9040, ip = "10.10.10.40", cores = 6, memory = 16384, disk_gb = 256 }
   }
 }

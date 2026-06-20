@@ -60,7 +60,7 @@ resource "proxmox_virtual_environment_vm" "guest" {
   }
 
   network_device {
-    bridge = var.internal_bridge
+    bridge = proxmox_network_linux_bridge.internal.name
   }
 
   initialization {

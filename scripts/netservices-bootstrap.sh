@@ -56,6 +56,7 @@ server=9.9.9.9
 address=/staging.homelab.internal/10.10.10.10
 address=/prod.homelab.internal/10.10.10.20
 address=/backup.homelab.internal/10.10.10.30
+address=/workplace.homelab.internal/10.10.10.40
 EOF
 systemctl enable --now dnsmasq
 systemctl restart dnsmasq
