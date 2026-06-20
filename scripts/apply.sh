@@ -4,8 +4,10 @@
 # Usage:
 #   apply.sh phase1   [--yes]   # bridge + image downloads + netservices LXC
 #   apply.sh bootstrap          # configure netservices (NAT/dnsmasq/tailscale) over SSH
-#   apply.sh phase2   [--yes]   # the four VMs (cloud-init needs phase1+bootstrap first)
-#   apply.sh all      [--yes]   # phase1 -> bootstrap -> phase2
+#   apply.sh phase2   [--yes]   # the four VMs (cloud-init needs phase1+bootstrap first;
+#                               #   with --yes, auto-reboots VMs once for the netplan fix)
+#   apply.sh all      [--yes]   # phase1 -> bootstrap -> phase2 -> reboot-vms
+#   apply.sh reboot-vms         # one-time VM reboot (genericcloud first-boot net fix)
 #   apply.sh plan               # terraform plan (read-only)
 #   apply.sh apply    [--yes]   # full terraform apply (day-2 updates)
 . "$(dirname "$0")/lib.sh"
@@ -50,11 +52,24 @@ bootstrap_netservices() {
   ok "netservices bootstrapped — approve the 10.10.10.0/24 route in the Tailscale admin console"
 }
 
+# Debian genericcloud renders the netplan static config on first boot but only
+# APPLIES it after a reboot — so freshly-created VMs come up with no network.
+# Reboot each VM once (after first boot has rendered the config) to fix it.
+firstboot_reboot_vms() {
+  say "First-boot network fix: rebooting VMs once (genericcloud netplan quirk)"
+  pve_ssh "sleep 90; \
+    VMS=\$(qm list | awk 'NR>1 && \$1>=9010 {print \$1}'); \
+    for v in \$VMS; do qm stop \$v >/dev/null 2>&1; done; sleep 3; \
+    for v in \$VMS; do qm start \$v >/dev/null 2>&1 && echo \"rebooted \$v\"; done"
+  ok "VMs rebooted — cloud-init will now complete with working network (~few min)"
+}
+
 case "$CMD" in
   phase1)    tf_apply "Phase 1: foundation" "${PHASE1_TARGETS[@]}" ;;
   bootstrap) bootstrap_netservices ;;
-  phase2)    tf_apply "Phase 2: VMs" ;;
-  all)       YES="-auto-approve"; tf_apply "Phase 1" "${PHASE1_TARGETS[@]}"; bootstrap_netservices; tf_apply "Phase 2" ;;
+  phase2)    tf_apply "Phase 2: VMs"; [ -n "$YES" ] && firstboot_reboot_vms ;;
+  all)       YES="-auto-approve"; tf_apply "Phase 1" "${PHASE1_TARGETS[@]}"; bootstrap_netservices; tf_apply "Phase 2"; firstboot_reboot_vms ;;
+  reboot-vms) firstboot_reboot_vms ;;
   plan)      terraform plan ;;
   apply)     tf_apply "Full apply (updates)" ;;
   *)         sed -n '2,12p' "$0"; exit 1 ;;

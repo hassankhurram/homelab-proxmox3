@@ -78,7 +78,10 @@ scripts/tailscale-alt-setup.sh    runs INSIDE the tailscale-alt LXC: subnet rout
 2. `./scripts/apply.sh phase1 --yes` — foundation.
 3. `./scripts/apply.sh bootstrap` — bring up the router; then approve the
    `10.10.10.0/24` subnet route in the Tailscale admin console.
-4. `./scripts/apply.sh phase2 --yes` — VMs boot with working internet → cloud-init.
+4. `./scripts/apply.sh phase2 --yes` — creates VMs, then auto-reboots them once.
+   (Debian genericcloud renders the netplan static config on first boot but only
+   *applies* it after a reboot — without the reboot, VMs come up with no network.
+   `reboot-vms` does just this step if needed.)
 5. Coolify on prod (`http://10.10.10.20:8000`); add staging/backup/workplace as
    remote servers.
 6. Updates later: edit `.tf`, `./scripts/apply.sh plan`, then `apply --yes`.
