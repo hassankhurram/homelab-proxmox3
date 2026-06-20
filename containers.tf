@@ -78,3 +78,69 @@ resource "proxmox_virtual_environment_container" "netservices" {
   # Kept out of Terraform on purpose: TF owns the container, the script owns
   # what runs inside it. See docs/bootstrap.md.
 }
+
+# Secondary Tailscale node on a DIFFERENT Tailscale account. Tailscale is NOT
+# auto-installed here — the user SSHes in (root password from tfvars) and installs
+# it manually. Internet via netservices NAT; reachable over the subnet route.
+resource "proxmox_virtual_environment_container" "tailscale_alt" {
+  node_name = var.pve_node
+  vm_id     = 9002
+
+  description = "secondary tailscale node (different account, manual install)"
+  tags        = ["homelab", "infra", "tailscale-alt"]
+
+  started       = true
+  start_on_boot = true
+  startup {
+    order    = 2
+    up_delay = 5
+  }
+
+  # Unprivileged + nesting; /dev/net/tun added to the CT config during prep so
+  # the user's manual `tailscale up` works.
+  unprivileged = true
+  features {
+    nesting = true
+  }
+
+  operating_system {
+    template_file_id = proxmox_download_file.debian_lxc.id
+    type             = "debian"
+  }
+
+  cpu { cores = 1 }
+  memory {
+    dedicated = 512
+    swap      = 512
+  }
+
+  disk {
+    datastore_id = var.storage_pool
+    size         = 8
+  }
+
+  network_interface {
+    name   = "eth0"
+    bridge = proxmox_network_linux_bridge.internal.name
+  }
+
+  initialization {
+    hostname = "tailscale-alt"
+
+    ip_config {
+      ipv4 {
+        address = "10.10.10.50/24"
+        gateway = var.internal_gateway
+      }
+    }
+
+    dns {
+      servers = [var.internal_gateway]
+    }
+
+    user_account {
+      keys     = var.ssh_public_keys
+      password = var.ts_alt_root_password
+    }
+  }
+}

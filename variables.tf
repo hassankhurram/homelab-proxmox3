@@ -34,6 +34,18 @@ variable "pve_ssh_private_key" {
   default     = "~/.ssh/proxmox_homelab"
 }
 
+variable "pve_ssh_address" {
+  description = "Address bpg uses to SSH to the node (Tailscale LXC, not the LAN IP)"
+  type        = string
+  default     = "100.100.70.50"
+}
+
+variable "pve_ssh_port" {
+  description = "Port bpg uses to SSH to the node (NPM forward -> host:22)"
+  type        = number
+  default     = 2222
+}
+
 # ---- Storage ----------------------------------------------------------------
 
 variable "storage_pool" {
@@ -89,6 +101,12 @@ variable "ssh_public_keys" {
 
 variable "tailscale_authkey" {
   description = "Reusable, pre-approved Tailscale auth key for the subnet router"
+  type        = string
+  sensitive   = true
+}
+
+variable "ts_alt_root_password" {
+  description = "Root password for the secondary Tailscale LXC (Tailscale installed manually, different account)"
   type        = string
   sensitive   = true
 }

@@ -1,10 +1,10 @@
 # Debian 12 cloud image (downloaded declaratively).
 resource "proxmox_download_file" "debian_cloud" {
-  content_type = "iso"
+  content_type = "import" # PVE 9: VM disk import needs 'import' (or 'images'), not 'iso'
   datastore_id = var.image_storage
   node_name    = var.pve_node
   url          = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
-  file_name    = "debian-12-genericcloud-amd64.img"
+  file_name    = "debian-12-genericcloud-amd64.qcow2"
 }
 
 # Per-VM cloud-init user-data (zsh, docker, + Coolify on prod).
