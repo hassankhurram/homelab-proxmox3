@@ -28,10 +28,23 @@ gitignored `terraform.tfvars`; `lib.sh` parses them.
 | Guest | id | IP | vCPU | RAM | Disk |
 |-------|----|----|------|-----|------|
 | netservices (LXC) | 9001 | 10.10.10.1 | 2 | 1 GB | 8 GB |
+| tailscale-alt (LXC) | 9002 | 10.10.10.50 | 1 | 512 MB | 8 GB |
 | staging | 9010 | 10.10.10.10 | 4 | 8 GB | 120 GB |
 | prod (Coolify) | 9020 | 10.10.10.20 | 6 | 16 GB | 120 GB |
 | backup | 9030 | 10.10.10.30 | 2 | 8 GB | 120 GB |
 | workplace | 9040 | 10.10.10.40 | 6 | 16 GB | 256 GB |
+
+### Tailscale topology
+
+- **netservices** (9001) = subnet router on **account A** (`hassankhurram`), advertises
+  `10.10.10.0/24`. Set up by `netservices-bootstrap.sh` (authkey in tfvars).
+- **tailscale-alt** (9002) = subnet router on a **different account B**, also advertises
+  `10.10.10.0/24`. Tailscale installed **manually** (interactive login, no authkey).
+  Reproduce with `scripts/tailscale-alt-setup.sh` run inside the CT. Root password in
+  tfvars (`ts_alt_root_password`).
+- Both nodes have the UDP-GRO-forwarding NIC tuning (`tailscale-nic-tune.service`) for
+  better subnet-router throughput. Routes must be **approved per account** in each
+  admin console before they go live.
 
 ## Layer boundary (do not cross)
 
@@ -54,7 +67,9 @@ scripts/apply.sh <cmd> [--yes]  setup + updates. cmds:
                                   plan     terraform plan
                                   apply    full terraform apply (day-2 updates)
                                 (mutating cmds are plan-only without --yes)
-scripts/netservices-bootstrap.sh  runs INSIDE the LXC: nftables NAT + dnsmasq + tailscale
+scripts/netservices-bootstrap.sh  runs INSIDE the netservices LXC: NAT + dnsmasq + tailscale
+scripts/tailscale-alt-setup.sh    runs INSIDE the tailscale-alt LXC: subnet router on
+                                  account B (interactive login) + NIC tuning
 ```
 
 ## Workflow

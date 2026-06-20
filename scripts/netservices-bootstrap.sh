@@ -12,7 +12,7 @@ LAN_IF="eth1"
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y dnsmasq nftables curl
+apt-get install -y dnsmasq nftables curl ethtool
 
 # ---- IP forwarding ----------------------------------------------------------
 cat >/etc/sysctl.d/99-router.conf <<EOF
@@ -70,5 +70,21 @@ tailscale up \
   --advertise-routes="${INTERNAL_CIDR}" \
   --hostname=homelab-netservices \
   --accept-dns=false
+
+# ---- NIC tuning (UDP GRO forwarding) — better subnet-router throughput ------
+cat >/etc/systemd/system/tailscale-nic-tune.service <<'UNIT'
+[Unit]
+Description=Tailscale subnet router NIC tuning (UDP GRO forwarding)
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/ethtool -K eth0 rx-udp-gro-forwarding on rx-gro-list off
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now tailscale-nic-tune.service
 
 echo "netservices ready. Approve the ${INTERNAL_CIDR} route in the Tailscale admin console."
