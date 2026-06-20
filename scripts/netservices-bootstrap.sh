@@ -18,7 +18,9 @@ apt-get install -y dnsmasq nftables curl
 cat >/etc/sysctl.d/99-router.conf <<EOF
 net.ipv4.ip_forward=1
 EOF
-sysctl --system
+# Only our file — `sysctl --system` errors on host-protected keys in an
+# unprivileged CT and would abort under `set -e`.
+sysctl -p /etc/sysctl.d/99-router.conf
 
 # ---- NAT (nftables) ---------------------------------------------------------
 cat >/etc/nftables.conf <<EOF
