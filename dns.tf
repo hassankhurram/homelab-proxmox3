@@ -11,7 +11,8 @@
 # Point at tailscale-alt's node IP (shared into account A); its proxy routes by
 # hostname to internal services. Reachable by any tailnet device — NO accept-routes.
 resource "cloudflare_dns_record" "private" {
-  for_each = toset(["coolify", "lab", "*.lab"])
+  # coolify lives at coolify.lab.* (covered by the *.lab wildcard A + cert)
+  for_each = toset(["lab", "*.lab"])
 
   zone_id = var.cloudflare_zone_id
   name    = "${each.key}.${var.domain}"

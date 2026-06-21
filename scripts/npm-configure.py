@@ -15,7 +15,7 @@ EMAIL, PASS, CF = os.environ["NPM_EMAIL"], os.environ["NPM_PASS"], os.environ["C
 DOMAIN = "orthosuite.net"
 PROD = "10.10.10.20"
 CERT_NAME = "orthosuite-homelab"
-DOMAINS = [f"coolify.{DOMAIN}", f"lab.{DOMAIN}", f"*.lab.{DOMAIN}"]
+DOMAINS = [f"lab.{DOMAIN}", f"*.lab.{DOMAIN}"]  # coolify.lab covered by *.lab
 
 
 def api(method, path, body=None, token=None, timeout=120):
@@ -106,6 +106,12 @@ def ensure(domains, port, label):
               + ("" if d.get("id") else f"  {st} {d}"))
 
 
-ensure([f"coolify.{DOMAIN}"], 8000, "coolify")
+ensure([f"coolify.lab.{DOMAIN}"], 8000, "coolify")
 ensure([f"*.lab.{DOMAIN}"], 80, "wildcard-lab")
+
+# remove the old bare coolify.<domain> proxy host if it exists (moved to coolify.lab)
+old = next((h for h in (hosts or []) if h["domain_names"] == [f"coolify.{DOMAIN}"]), None)
+if old:
+    api("DELETE", f"/api/nginx/proxy-hosts/{old['id']}", token=token)
+    print(f"  removed old host coolify.{DOMAIN}")
 print("done")
