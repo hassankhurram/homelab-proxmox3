@@ -164,7 +164,8 @@ resource "proxmox_virtual_environment_container" "mdnest" {
 
   unprivileged = true
   features {
-    nesting = true # allows Docker inside if mdnest ships as a container
+    nesting = true # Docker (mdnest is docker-compose based)
+    keyctl  = true
   }
 
   operating_system {

@@ -71,7 +71,10 @@ print("authenticated")
 
 # 2. Wildcard DNS-01 cert (skip if present)
 st, certs = api("GET", "/api/nginx/certificates", token=token)
-cert = next((c for c in (certs or []) if c.get("nice_name") == CERT_NAME), None)
+# Reuse any LE cert already covering our domains (avoids re-issuing / LE limits)
+cert = next((c for c in (certs or [])
+             if c.get("provider") == "letsencrypt"
+             and set(DOMAINS).issubset(set(c.get("domain_names", [])))), None)
 if cert:
     cert_id = cert["id"]; print(f"cert exists id={cert_id}")
 else:
@@ -90,24 +93,25 @@ else:
 st, hosts = api("GET", "/api/nginx/proxy-hosts", token=token)
 
 
-def ensure(domains, port, label):
+def ensure(domains, host, port, label):
     cur = next((h for h in (hosts or []) if set(h["domain_names"]) == set(domains)), None)
-    body = {"domain_names": domains, "forward_scheme": "http", "forward_host": PROD,
+    body = {"domain_names": domains, "forward_scheme": "http", "forward_host": host,
             "forward_port": port, "certificate_id": cert_id, "ssl_forced": True,
             "http2_support": True, "block_exploits": True, "allow_websocket_upgrade": True,
             "access_list_id": 0, "advanced_config": "", "locations": [],
             "meta": {"letsencrypt_agree": False, "dns_challenge": False}}
     if cur:
         api("PUT", f"/api/nginx/proxy-hosts/{cur['id']}", body, token=token)
-        print(f"  updated {label}: {domains} -> {PROD}:{port}")
+        print(f"  updated {label}: {domains} -> {host}:{port}")
     else:
         st, d = api("POST", "/api/nginx/proxy-hosts", body, token=token)
-        print(f"  {'created' if d.get('id') else 'FAILED'} {label}: {domains} -> {PROD}:{port}"
+        print(f"  {'created' if d.get('id') else 'FAILED'} {label}: {domains} -> {host}:{port}"
               + ("" if d.get("id") else f"  {st} {d}"))
 
 
-ensure([f"coolify.lab.{DOMAIN}"], 8000, "coolify")
-ensure([f"*.lab.{DOMAIN}"], 80, "wildcard-lab")
+ensure([f"coolify.lab.{DOMAIN}"], PROD, 8000, "coolify")
+ensure([f"*.lab.{DOMAIN}"], PROD, 80, "wildcard-lab")
+ensure([f"mdnest.lab.{DOMAIN}"], "10.10.10.60", 3236, "mdnest")
 
 # remove the old bare coolify.<domain> proxy host if it exists (moved to coolify.lab)
 old = next((h for h in (hosts or []) if h["domain_names"] == [f"coolify.{DOMAIN}"]), None)

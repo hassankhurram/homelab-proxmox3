@@ -28,7 +28,8 @@ gitignored `terraform.tfvars`; `lib.sh` parses them.
 | Guest | id | IP | vCPU | RAM | Disk |
 |-------|----|----|------|-----|------|
 | netservices (LXC) | 9001 | 10.10.10.1 | 2 | 1 GB | 8 GB |
-| tailscale-alt (LXC) | 9002 | 10.10.10.50 | 1 | 512 MB | 8 GB |
+| tailscale-alt (LXC) | 9002 | 10.10.10.50 | 2 | 2 GB | 8 GB |
+| mdnest (LXC) | 9003 | 10.10.10.60 | 2 | 2 GB | 20 GB |
 | staging | 9010 | 10.10.10.10 | 4 | 8 GB | 120 GB |
 | prod (Coolify) | 9020 | 10.10.10.20 | 6 | 16 GB | 120 GB |
 | backup | 9030 | 10.10.10.30 | 2 | 8 GB | 120 GB |
@@ -106,6 +107,16 @@ scripts/npm-configure.py          runs INSIDE the proxy CT: bootstrap NPM admin,
   (shared into account A) → internal. Set hostnames in `public_hostnames` as apps go live.
 - DNS managed in Terraform (`dns.tf`, `cloudflare_dns_record.private` / `.public`).
 - All migrated zone records are DNS-only (un-proxied) to match pre-Cloudflare behavior.
+
+NPM proxy hosts on tailscale-alt (one shared `*.lab` wildcard cert):
+- `coolify.lab.orthosuite.net` → `10.10.10.20:8000`  (Coolify UI, prod)
+- `*.lab.orthosuite.net`       → `10.10.10.20:80`     (Coolify Traefik → apps)
+- `mdnest.lab.orthosuite.net`  → `10.10.10.60:3236`   (mdnest notes, LXC 9003)
+
+Configure NPM with `scripts/npm-configure.py` (edit the `ensure(...)` calls). mdnest is
+docker-compose based (`scripts/mdnest-setup.sh` installs Docker + clones + generates conf;
+then edit `/opt/mdnest/mdnest.conf` and `./mdnest-server rebuild`). Key conf: `AUTH_MODE`
+(single/multi), `BIND_ADDRESS=0.0.0.0` (so NPM can reach it), `MOUNT_<name>=<path>`.
 
 ## Conventions
 
