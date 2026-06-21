@@ -96,11 +96,12 @@ resource "proxmox_virtual_environment_container" "tailscale_alt" {
     up_delay = 5
   }
 
-  # Unprivileged + nesting; /dev/net/tun added to the CT config during prep so
-  # the user's manual `tailscale up` works.
+  # Unprivileged + nesting + keyctl (keyctl needed for Docker, which runs NPM
+  # here). /dev/net/tun added to the CT config during prep for tailscale.
   unprivileged = true
   features {
     nesting = true
+    keyctl  = true
   }
 
   operating_system {
@@ -108,9 +109,9 @@ resource "proxmox_virtual_environment_container" "tailscale_alt" {
     type             = "debian"
   }
 
-  cpu { cores = 1 }
+  cpu { cores = 2 }
   memory {
-    dedicated = 512
+    dedicated = 2048
     swap      = 512
   }
 

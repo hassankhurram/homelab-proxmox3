@@ -111,6 +111,85 @@ variable "ts_alt_root_password" {
   sensitive   = true
 }
 
+# ---- Cloudflare -------------------------------------------------------------
+
+variable "domain" {
+  description = "Public domain managed in Cloudflare"
+  type        = string
+  default     = ""
+}
+
+variable "cloudflare_api_token" {
+  description = "Scoped Cloudflare API token (Zone:DNS:Edit + Zone:Read; +Account:Tunnel:Edit if using Tunnel)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare Zone ID for the domain"
+  type        = string
+  default     = ""
+}
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare Account ID"
+  type        = string
+  default     = ""
+}
+
+# ---- Public VM (jarvis) + Nginx Proxy Manager ------------------------------
+
+variable "public_vm_ip" {
+  description = "Public IP of the jarvis VM (DNS A-record target)"
+  type        = string
+  default     = "51.159.67.59"
+}
+
+variable "public_vm_cname" {
+  description = "Public ingress target (jarvis) — production CNAMEs point here"
+  type        = string
+  default     = "jarvis.hassankhurram.com"
+}
+
+variable "tailscale_alt_ip" {
+  description = "tailscale-alt's Tailscale IP — PRIVATE records point here; its proxy routes by host to internal services. Shared into account A; no subnet routes/accept-routes on clients."
+  type        = string
+  default     = "100.100.70.20"
+}
+
+variable "public_hostnames" {
+  description = "Subdomains served PUBLICLY via jarvis (CNAME -> public_vm_cname)"
+  type        = list(string)
+  default     = []
+}
+
+variable "npm_url" {
+  description = "Nginx Proxy Manager API base (admin port, over Tailscale)"
+  type        = string
+  default     = "http://100.100.15.130:81"
+}
+
+variable "npm_email" {
+  description = "NPM admin email (set in terraform.tfvars)"
+  type        = string
+  default     = ""
+}
+
+variable "npm_password" {
+  description = "NPM admin password (set in terraform.tfvars — keep out of git)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "jarvis_ts_b_authkey" {
+  description = "Account-B Tailscale auth key for jarvis's containerized subnet-route consumer (set in terraform.tfvars)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # ---- VMs --------------------------------------------------------------------
 
 variable "vms" {

@@ -34,17 +34,23 @@ gitignored `terraform.tfvars`; `lib.sh` parses them.
 | backup | 9030 | 10.10.10.30 | 2 | 8 GB | 120 GB |
 | workplace | 9040 | 10.10.10.40 | 6 | 16 GB | 256 GB |
 
-### Tailscale topology
+### Tailscale topology / ingress model
 
-- **netservices** (9001) = subnet router on **account A** (`hassankhurram`), advertises
-  `10.10.10.0/24`. Set up by `netservices-bootstrap.sh` (authkey in tfvars).
-- **tailscale-alt** (9002) = subnet router on a **different account B**, also advertises
-  `10.10.10.0/24`. Tailscale installed **manually** (interactive login, no authkey).
-  Reproduce with `scripts/tailscale-alt-setup.sh` run inside the CT. Root password in
-  tfvars (`ts_alt_root_password`).
-- Both nodes have the UDP-GRO-forwarding NIC tuning (`tailscale-nic-tune.service`) for
-  better subnet-router throughput. Routes must be **approved per account** in each
-  admin console before they go live.
+No subnet routes are needed by client devices — access is via a **proxy-on-node** that's
+directly on the internal subnet, reached by its Tailscale IP.
+
+- **tailscale-alt** (9002) — the **internal reverse proxy**. Account B (`orthosuiteihc`),
+  IP **`100.100.70.20`**, also `10.10.10.50` on the internal bridge (so it reaches every
+  VM/LXC directly). Runs **NPM** (Docker) with a wildcard LE cert (Cloudflare DNS-01).
+  **Shared into account A**, so both `jarvis` and personal account-A devices reach it by
+  its node IP — no `accept-routes`, nothing touches device routing tables. Account-B ACL
+  + the share govern access. NPM admin on `100.100.70.20:81`.
+- **netservices** (9001, account A) — router/NAT/dnsmasq for the VMs' internet; still
+  advertises `10.10.10.0/24` but that route is **optional** now (proxy model supersedes it).
+- **jarvis-orthosuite-b** — a 2nd tailscaled (Docker, `--network=host`) on jarvis joining
+  account B with `--accept-routes`. Kept for a future plan to drop the account-A dependency.
+- **ortho-internal** (`100.100.70.50`) — SSH backdoor to the Proxmox host (`:2222`→`:22`).
+  Independent of all routing; do not disturb.
 
 ## Layer boundary (do not cross)
 
@@ -68,8 +74,11 @@ scripts/apply.sh <cmd> [--yes]  setup + updates. cmds:
                                   apply    full terraform apply (day-2 updates)
                                 (mutating cmds are plan-only without --yes)
 scripts/netservices-bootstrap.sh  runs INSIDE the netservices LXC: NAT + dnsmasq + tailscale
-scripts/tailscale-alt-setup.sh    runs INSIDE the tailscale-alt LXC: subnet router on
-                                  account B (interactive login) + NIC tuning
+scripts/tailscale-alt-setup.sh    runs INSIDE tailscale-alt: join account B (interactive)
+scripts/tailscale-alt-npm.sh      runs INSIDE tailscale-alt: install Docker + NPM
+scripts/npm-configure.py          runs INSIDE the proxy CT: bootstrap NPM admin, request
+                                  wildcard DNS-01 cert, create proxy hosts (env: NPM_URL,
+                                  NPM_EMAIL, NPM_PASS, CF_TOKEN)
 ```
 
 ## Workflow
@@ -86,11 +95,17 @@ scripts/tailscale-alt-setup.sh    runs INSIDE the tailscale-alt LXC: subnet rout
    remote servers.
 6. Updates later: edit `.tf`, `./scripts/apply.sh plan`, then `apply --yes`.
 
-## Ingress
+## Ingress (two tiers, both terminate on tailscale-alt's NPM)
 
-Public VM (on tailnet) runs Caddy → Tailscale → internal services. Cloudflare DNS →
-public VM. Planned upgrade: Cloudflare Tunnel (`cloudflared`) in an LXC, retire the
-public VM's inbound role.
+- **PRIVATE (tailnet-only)**: `coolify.orthosuite.net`, `*.lab.orthosuite.net` → **A-record
+  to `100.100.70.20`** (tailscale-alt). Reachable by any device whose Tailscale user has
+  tailscale-alt shared + an ACL grant. NPM routes by host → Coolify (`:8000`) / apps
+  (`:80`). Wildcard TLS via Cloudflare DNS-01.
+- **PUBLIC (production)**: `var.public_hostnames` → **CNAME `jarvis.hassankhurram.com`**.
+  jarvis (account A, public IP, its own NPM) forwards to tailscale-alt's `100.100.70.20`
+  (shared into account A) → internal. Set hostnames in `public_hostnames` as apps go live.
+- DNS managed in Terraform (`dns.tf`, `cloudflare_dns_record.private` / `.public`).
+- All migrated zone records are DNS-only (un-proxied) to match pre-Cloudflare behavior.
 
 ## Conventions
 
