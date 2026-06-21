@@ -111,6 +111,7 @@ def ensure(domains, host, port, label):
 
 ensure([f"coolify.lab.{DOMAIN}"], PROD, 8000, "coolify")
 ensure([f"*.lab.{DOMAIN}"], PROD, 80, "wildcard-lab")
+ensure([f"mdnest.lab.{DOMAIN}"], "10.10.10.60", 3236, "mdnest")  # private notes
 
 # remove the old bare coolify.<domain> proxy host if it exists (moved to coolify.lab)
 old = next((h for h in (hosts or []) if h["domain_names"] == [f"coolify.{DOMAIN}"]), None)

@@ -114,8 +114,15 @@ scripts/npm-configure.py          runs INSIDE the proxy CT: bootstrap NPM admin,
 NPM proxy hosts on tailscale-alt (one shared `*.lab` wildcard cert):
 - `coolify.lab.orthosuite.net` → `10.10.10.20:8000`  (Coolify UI, prod)
 - `*.lab.orthosuite.net`       → `10.10.10.20:80`     (Coolify Traefik → apps)
-(LXC 9003 currently runs a hello-world static site on :8080, exposed publicly as
-`test.orthosuite.net` via jarvis — `scripts/hello-deploy.sh`.)
+- `mdnest.lab.orthosuite.net`  → `10.10.10.60:3236`   (mdnest notes, private)
+
+LXC 9003 ("apps") runs both: mdnest (`:3236`, private `mdnest.lab`) and a hello-world
+static site (`:8080`, public `test.orthosuite.net` via jarvis — `scripts/hello-deploy.sh`).
+
+Workspace VM 9040 (Tailscale account B, `100.94.112.96`, hostname `workspace`): users
+`shared`/`harris`/`hassan` (creds in /home/shared/CREDENTIALS.md), `/home/shared` group-
+shared, Claude Code + Gemini + Codex CLIs installed. Rebuild: `scripts/workspace-users.sh`
++ `scripts/workspace-ts-cli.sh`. Share into hassankhurram for VS Code Remote-SSH.
 
 Configure NPM with `scripts/npm-configure.py` (edit the `ensure(...)` calls). mdnest is
 docker-compose based (`scripts/mdnest-setup.sh` installs Docker + clones + generates conf;
