@@ -153,9 +153,9 @@ variable "public_vm_cname" {
 }
 
 variable "tailscale_alt_ip" {
-  description = "tailscale-alt's Tailscale IP — PRIVATE records point here; its proxy routes by host to internal services. Shared into account A; no subnet routes/accept-routes on clients."
+  description = "tailscale-alt's CANONICAL Tailscale IP as seen across tailnets (the share/coordination uses this; the node-local 100.100.70.20 is not routable from account A). PRIVATE records point here."
   type        = string
-  default     = "100.100.70.20"
+  default     = "100.67.130.84"
 }
 
 variable "public_hostnames" {
