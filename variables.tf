@@ -183,6 +183,13 @@ variable "npm_password" {
   default     = ""
 }
 
+variable "coolify_token" {
+  description = "Coolify API token (set in terraform.tfvars; used by the workspace deploy agent)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "jarvis_ts_b_authkey" {
   description = "Account-B Tailscale auth key for jarvis's containerized subnet-route consumer (set in terraform.tfvars)"
   type        = string

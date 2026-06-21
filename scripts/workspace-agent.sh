@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -e
 mkdir -p /etc/homelab
+# Values single-quoted so special chars (e.g. '|' in Coolify tokens) survive sourcing.
 cat > /etc/homelab/secrets.env <<EOF
-DOMAIN=${DOMAIN}
-CF_TOKEN=${CF_TOKEN}
-CF_ZONE_ID=${CF_ZONE}
-CF_ACCOUNT_ID=${CF_ACCOUNT}
-NPM_ALT_URL=http://100.100.70.20:81
-NPM_EMAIL=${NPM_EMAIL}
-NPM_PASS=${NPM_PASS}
+DOMAIN='${DOMAIN}'
+CF_TOKEN='${CF_TOKEN}'
+CF_ZONE_ID='${CF_ZONE}'
+CF_ACCOUNT_ID='${CF_ACCOUNT}'
+NPM_ALT_URL='http://100.100.70.20:81'
+NPM_EMAIL='${NPM_EMAIL}'
+NPM_PASS='${NPM_PASS}'
 NPM_CERT_ID=1
-COOLIFY_URL=http://10.10.10.20:8000
-COOLIFY_TOKEN=
+COOLIFY_URL='http://10.10.10.20:8000'
+COOLIFY_TOKEN=''
 EOF
 chmod 600 /etc/homelab/secrets.env
 
