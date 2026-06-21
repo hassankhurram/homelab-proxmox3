@@ -145,3 +145,65 @@ resource "proxmox_virtual_environment_container" "tailscale_alt" {
     }
   }
 }
+
+# mdnest app host. Internet via netservices NAT; exposed via the proxy model
+# (mdnest.lab.* private, or jarvis for public) once the app + port are known.
+resource "proxmox_virtual_environment_container" "mdnest" {
+  node_name = var.pve_node
+  vm_id     = 9003
+
+  description = "mdnest app host (terraform-managed)"
+  tags        = ["homelab", "mdnest"]
+
+  started       = true
+  start_on_boot = true
+  startup {
+    order    = 3
+    up_delay = 5
+  }
+
+  unprivileged = true
+  features {
+    nesting = true # allows Docker inside if mdnest ships as a container
+  }
+
+  operating_system {
+    template_file_id = proxmox_download_file.debian_lxc.id
+    type             = "debian"
+  }
+
+  cpu { cores = 2 }
+  memory {
+    dedicated = 2048
+    swap      = 512
+  }
+
+  disk {
+    datastore_id = var.storage_pool
+    size         = 20
+  }
+
+  network_interface {
+    name   = "eth0"
+    bridge = proxmox_network_linux_bridge.internal.name
+  }
+
+  initialization {
+    hostname = "mdnest"
+
+    ip_config {
+      ipv4 {
+        address = "10.10.10.60/24"
+        gateway = var.internal_gateway
+      }
+    }
+
+    dns {
+      servers = [var.internal_gateway]
+    }
+
+    user_account {
+      keys = var.ssh_public_keys
+    }
+  }
+}
