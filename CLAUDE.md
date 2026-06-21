@@ -102,9 +102,12 @@ scripts/npm-configure.py          runs INSIDE the proxy CT: bootstrap NPM admin,
   to `100.100.70.20`** (tailscale-alt). Reachable by any device whose Tailscale user has
   tailscale-alt shared + an ACL grant. NPM routes by host → Coolify (`:8000`) / apps
   (`:80`). Wildcard TLS via Cloudflare DNS-01.
-- **PUBLIC (production)**: `var.public_hostnames` → **CNAME `jarvis.hassankhurram.com`**.
-  jarvis (account A, public IP, its own NPM) forwards to tailscale-alt's `100.100.70.20`
-  (shared into account A) → internal. Set hostnames in `public_hostnames` as apps go live.
+- **PUBLIC (production)**: `var.public_hostnames` → **CNAME `jarvis.hassankhurram.com`** (DNS-only).
+  jarvis (account A, public IP `51.159.67.59`, its own NPM at `100.100.15.130:81`) terminates
+  TLS (HTTP-01 LE) and forwards to the internal backend, which it reaches via its
+  **`tailscale-b`** route (account B, `--accept-routes`). Add a public host with
+  `scripts/jarvis-public-host.py` (env: NPM_URL, NPM_EMAIL, NPM_PASS, PUB_HOST, FWD_HOST,
+  FWD_PORT). Proven: `test.orthosuite.net` → `jarvis` → `10.10.10.60:3236` (mdnest) → 200.
 - DNS managed in Terraform (`dns.tf`, `cloudflare_dns_record.private` / `.public`).
 - All migrated zone records are DNS-only (un-proxied) to match pre-Cloudflare behavior.
 
